@@ -75,7 +75,67 @@ def d(l,P=0.68,c=0,dB=0):
     print ('u=    ',u)
     print ('P=    ',P)
 
+def help():
+    print("d(l,P=0.68,c=0,dB=0)")
+    print("r(k,a,u)")
+    print("f(x,y)")
+
+def r(k,a,u):
+    if(len(a)!=len(u)):
+        print("error")
+        return
+    y=0
+    for i,j in zip(a,u):
+        y+=(j/i)**2
+    y=k*math.sqrt(y)
+    print("result=  ",y)
+    return y
+
+def f(x,y):
+    if(len(x)!=len(y)):
+        print("error")
+        return 
+    x_=sum(x)/len(x)
+    y_=sum(y)/len(y)
+
+    xy=[i*j for i,j in zip(x,y)]
+    xy_=sum(xy)/len(xy)
+
+    x2=[i*i for i in x]
+    x2_=sum(x2)/len(x2)
+    y2=[i*i for i in y]
+    y2_=sum(y2)/len(y2)
+
+    lxy=len(x)*(xy_-x_*y_)
+    lxx=len(x)*(x2_-x_**2)
+    lyy=len(y)*(y2_-y_**2)
+
+    m=lxy/lxx
+    b=y_-m*x_
+    r=lxy/math.sqrt(lxx*lyy)
+    Sm=m*math.sqrt((1/(r**2)-1)/(len(x)-2))
+    Sb=Sm*math.sqrt(x2_)
 
 
+    print("x_=   ",x_)
+    print("y_=   ",y_)
+    print("xy_=  ",xy_)
+    print("x2_=  ",x2_)
+    print("y2_=  ",y2_)
+    print('''lxy=len(x)*(xy_-x_*y_)
+    lxx=len(x)*(x2_-x_**2)
+    lyy=len(y)*(y2_-y_**2)
 
-
+    m=lxy/lxx
+    b=y_-m*x_
+    r=lxy/math.sqrt(lxx*lyy)
+    Sm=m*math.sqrt((1/(r**2)-1)/(len(x)-2))
+    Sb=Sm*math.sqrt(x2_)''')
+    print("lxy=  ",lxy)
+    print("lxx=  ",lxx)
+    print("lyy=  ",lyy)
+    print("m=    ",m)
+    print("b=    ",b)
+    print("r=    ",r)
+    print("Sm=   ",Sm)
+    print("Sb=   ",Sb)
