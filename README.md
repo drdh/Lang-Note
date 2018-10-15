@@ -1,3 +1,5 @@
-# py
+### programming language notes
 
-- 记录一些小玩意
+- python
+- cpp
+
