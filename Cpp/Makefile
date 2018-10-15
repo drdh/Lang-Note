@@ -1,4 +1,5 @@
 test:test.cpp
-	g++ test.cpp -g -o test
+	@g++ test.cpp -g -o test
 clean:
-	rm test
+	@rm test -rf
+
