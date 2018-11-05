@@ -90,6 +90,40 @@
 
 训练一个agent需要指定环境(任何OpenAI gym环境以及用户自定义的)，指定特定的算法( `PPO`, `PG`, `A2C`, `A3C`, `IMPALA`, `ES`, `DDPG`, `DQN`, `APEX`, and `APEX_DDPG`). 也可以改变默认设定(比如算法参数，资源参数等等)
 
+**算法**
+
+- Gradient-based
+
+  - Advantage Actor-Critic(A2C, A3C)
+
+    [[paper\]](https://arxiv.org/abs/1602.01783) [[implementation\]](https://github.com/ray-project/ray/blob/master/python/ray/rllib/agents/a3c/a3c.py) 
+
+  - Deep Deterministic Policy Gradients (DDPG)
+
+    [[paper\]](https://arxiv.org/abs/1509.02971) [[implementation\]](https://github.com/ray-project/ray/blob/master/python/ray/rllib/agents/ddpg/ddpg.py) 
+
+  - Deep Q Networks (DQN, Rainbow)
+
+    [[paper\]](https://arxiv.org/abs/1312.5602) [[implementation\]](https://github.com/ray-project/ray/blob/master/python/ray/rllib/agents/dqn/dqn.py) 
+
+  - Policy Gradients
+
+    [[paper\]](https://papers.nips.cc/paper/1713-policy-gradient-methods-for-reinforcement-learning-with-function-approximation.pdf) [[implementation\]](https://github.com/ray-project/ray/blob/master/python/ray/rllib/agents/pg/pg.py)
+
+  - Proximal Policy Optimization (PPO)
+
+    [[paper\]](https://arxiv.org/abs/1707.06347) [[implementation\]](https://github.com/ray-project/ray/blob/master/python/ray/rllib/agents/ppo/ppo.py) 
+
+- Derivative-free
+
+  - Augmented Random Search (ARS)
+
+    [[paper\]](https://arxiv.org/abs/1803.07055) [[implementation\]](https://github.com/ray-project/ray/blob/master/python/ray/rllib/agents/ars/ars.py) 
+
+  - Evolution Strategies
+
+    [[paper\]](https://arxiv.org/abs/1703.03864) [[implementation\]](https://github.com/ray-project/ray/blob/master/python/ray/rllib/agents/es/es.py) 
+
 ### RLlib Abstraction
 
 [RLlib 主要概念](https://ray.readthedocs.io/en/latest/rllib-concepts.html)
@@ -232,47 +266,58 @@ $$
 
 优化策略
 
-![1541407600384](RLlib/1541407600384.png)
+- **Allreduce**
 
-**算法**
+```python
+grads = [ev.grad(ev.sample())
+	for ev in evaluators] #取每个evaluator的采样
+avg_grad = aggregate(grads) #综合
+local_graph.apply(avg_grad)　#更新本地graph
+weights = broadcast(
+ 	local_graph.weights())　#
+for ev in evaluators:　#
+	ev.set_weights(weights)
+```
 
-- Gradient-based
+- **Local Mutil-GPU**
 
-  - Advantage Actor-Critic(A2C, A3C)
+```python
+samples = concat([ev.sample()
+	for ev in evaluators])
+pin_in_local_gpu_memory(samples)
+for _ in range(NUM_SGD_EPOCHS):
+ 	local_g.apply(local_g.grad(samples)
+weights = broadcast(local_g.weights())
+for ev in evaluators:
+ 	ev.set_weights(weights)
+```
 
-    [[paper\]](https://arxiv.org/abs/1602.01783) [[implementation\]](https://github.com/ray-project/ray/blob/master/python/ray/rllib/agents/a3c/a3c.py) 
+- **Asynchronous**
 
-    A2C: SyncSamplesOptimizer 
+```python
+grads = [ev.grad(ev.sample())
+         for ev in evaluators]
+for _ in range(NUM_ASYNC_GRADS):
+	grad, ev, grads = wait(grads)
+	local_graph.apply(grad)
+ 	ev.set_weights(
+  		local_graph.get_weights())
+  	grads.append(ev.grad(ev.sample()))
+```
 
-    A3C: AsyncGradientsOptimizer 
+- **Sharded Param-server**
 
-  - Deep Deterministic Policy Gradients (DDPG)
-
-    [[paper\]](https://arxiv.org/abs/1509.02971) [[implementation\]](https://github.com/ray-project/ray/blob/master/python/ray/rllib/agents/ddpg/ddpg.py) 
-
-  - Deep Q Networks (DQN, Rainbow)
-
-    [[paper\]](https://arxiv.org/abs/1312.5602) [[implementation\]](https://github.com/ray-project/ray/blob/master/python/ray/rllib/agents/dqn/dqn.py) 
-
-  - Policy Gradients
-
-    [[paper\]](https://papers.nips.cc/paper/1713-policy-gradient-methods-for-reinforcement-learning-with-function-approximation.pdf) [[implementation\]](https://github.com/ray-project/ray/blob/master/python/ray/rllib/agents/pg/pg.py)
-
-  - Proximal Policy Optimization (PPO)
-
-    [[paper\]](https://arxiv.org/abs/1707.06347) [[implementation\]](https://github.com/ray-project/ray/blob/master/python/ray/rllib/agents/ppo/ppo.py) 
-
-- Derivative-free
-
-  - Augmented Random Search (ARS)
-
-    [[paper\]](https://arxiv.org/abs/1803.07055) [[implementation\]](https://github.com/ray-project/ray/blob/master/python/ray/rllib/agents/ars/ars.py) 
-
-  - Evolution Strategies
-
-    [[paper\]](https://arxiv.org/abs/1703.03864) [[implementation\]](https://github.com/ray-project/ray/blob/master/python/ray/rllib/agents/es/es.py) 
-
-
+```python
+grads = [ev.grad(ev.sample())
+	for ev in evaluators]
+for _ in range(NUM_ASYNC_GRADS):
+	grad, ev, grads = wait(grads)
+ 	for ps, g in split(grad, ps_shards):
+ 		ps.push(g)
+ 	ev.set_weights(concat(
+ 		[ps.pull() for ps in ps_shards])
+ 	grads.append(ev.grad(ev.sample()))
+```
 
 **Compatibility matrix**:
 
@@ -289,7 +334,7 @@ $$
 | ES           | **Yes**          | **Yes**            | No          | No                 |
 | ARS          | **Yes**          | **Yes**            | No          | No                 |
 
-### 
+
 
 
 
