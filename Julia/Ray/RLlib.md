@@ -252,7 +252,7 @@ while True:
 $$
 step(L(\theta),X,\theta) \Rightarrow \theta_{opt}
 $$
-相应的，RLlib的policy optimizer在local policy grapg $G$ 和一系列remote evaluator replicas上面操作。比如
+相应的，RLlib的policy optimizer在local policy graph $G$ 和一系列remote evaluator replicas上面操作。比如
 $$
 step(G,ev_1...ev_n,\theta) \Rightarrow\theta_{opt}
 $$
@@ -333,18 +333,3 @@ for _ in range(NUM_ASYNC_GRADS):
 | APEX-DDPG    | No               | **Yes**            | **Yes**     | No                 |
 | ES           | **Yes**          | **Yes**            | No          | No                 |
 | ARS          | **Yes**          | **Yes**            | No          | No                 |
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
