@@ -2,7 +2,7 @@
 
 **PLAN**
 
-- [ ] 结合[RLlib文档](https://ray.readthedocs.io/en/latest/rllib.html) 阅读[RLlib代码](https://github.com/ray-project/ray/tree/master/python/ray/rllib)
+- [x] 结合[RLlib文档](https://ray.readthedocs.io/en/latest/rllib.html) 阅读[RLlib代码](https://github.com/ray-project/ray/tree/master/python/ray/rllib)
 
 - [ ] 学习了解最新的RL算法：[CS 294-112 at UC Berkeley](http://rail.eecs.berkeley.edu/deeprlcourse/)
 
@@ -26,233 +26,143 @@
 
     超级良心RL教程
 
+### Overview
 
+- 没有严格的接口。几乎所有的东西都可以自定义，包括算法、model、优化策略等等
+- 提供一些方便的类(actor). 可扩充的地方很多，比如更多的算法实现，嵌入更多的DL模型
+- 提供方便的参数调整(主要以config字典形式设定), 便于在现有模型的基础上，微调。同时提供已经优化好的参数案例`tuned_examples`。
 
-.
-├── agents
-│   ├── a3c
-│   │   ├── a2c.py #Advantage Actor-Critic
-│   │   ├── a3c.py #
-│   │   ├── a3c_tf_policy_graph.py
-│   │   ├── a3c_torch_policy_graph.py
-│   │   └── __init__.py
-│   ├── agent.py 关于算法的COMMON_CONFIG, 可以自行设定
-│   ├── ars
-│   │   ├── ars.py #ARS Augmented Random Search
-│   │   ├── __init__.py
-│   │   ├── optimizers.py
-│   │   ├── policies.py
-│   │   └── utils.py
-│   ├── ddpg
-│   │   ├── apex.py #APX_DDPG
-│   │   ├── common
-│   │   │   └── __init__.py
-│   │   ├── ddpg_policy_graph.py
-│   │   ├── ddpg.py #DDPG Deep Deterministic Policy Gradients
-│   │   ├── __init__.py
-│   │   └── README.md
-│   ├── dqn
-│   │   ├── apex.py #APX_DQN
-│   │   ├── common
-│   │   │   └── __init__.py
-│   │   ├── dqn_policy_graph.py
-│   │   ├── dqn.py #DQN Deep Q Networks
-│   │   ├── __init__.py
-│   │   └── README.md
-│   ├── es
-│   │   ├── es.py #ES Evolution Strategy
-│   │   ├── __init__.py
-│   │   ├── optimizers.py
-│   │   ├── policies.py
-│   │   └── utils.py
-│   ├── impala
-│   │   ├── impala.py #IMAALA Importance Weighted Actor-Learner Architecture
-│   │   ├── __init__.py
-│   │   ├── vtrace_policy_graph.py
-│   │   └── vtrace.py
-│   ├── __init__.py
-│   ├── mock.py
-│   ├── pg
-│   │   ├── __init__.py
-│   │   ├── pg_policy_graph.py #基于PG的policy graph
-│   │   └── pg.py #PG Policy Gradient
-│   └── ppo
-│       ├── __init__.py
-│       ├── ppo_policy_graph.py
-│       ├── ppo.py #PPO Proximal Policy Optimization
-│       ├── rollout.py
-│       ├── test
-│       │   └── test.py
-│       └── utils.py
-├── asv.conf.json
-├── env
-│   ├── async_vector_env.py #Async
-│   ├── atari_wrappers.py
-│   ├── env_context.py
-│   ├── external_env.py #external Agents
-│   ├── __init__.py
-│   ├── multi_agent_env.py #Multi-Agent
-│   ├── serving_env.py
-│   └── vector_env.py #Vector
-├── evaluation
-│   ├── episode.py
-│   ├── __init__.py
-│   ├── interface.py
-│   ├── keras_policy_graph.py
-│   ├── metrics.py
-│   ├── policy_evaluator.py #使用policy与环境交互
-│   ├── policy_graph.py #policy graph超类
-│   ├── postprocessing.py
-│   ├── sample_batch.py
-│   ├── sampler.py
-│   ├── tf_policy_graph.py #tensorflow policy graph template
-│   └── torch_policy_graph.py #pytorch policy graph template
-├── examples
-│   ├── carla
-│   │   ├── a3c_lane_keep.py
-│   │   ├── dqn_lane_keep.py
-│   │   ├── env.py #用于Carla的gym env, demo
-│   │   ├── models.py #自定义model 案例
-│   │   ├── ppo_lane_keep.py
-│   │   ├── README
-│   │   ├── scenarios.py
-│   │   ├── train_a3c.py
-│   │   ├── train_dqn.py
-│   │   └── train_ppo.py
-│   ├── cartpole_lstm.py
-│   ├── custom_env.py # 作为自定义gym env的demo
-│   ├── custom_metrics_and_callbacks.py
-│   ├── __init__.py
-│   ├── multiagent_cartpole.py #multiagent的carpole，同时也有不同policy的参数共享
-│   ├── multiagent_two_trainers.py #同时使用两个训练算法
-│   └── serving
-│       ├── cartpole_client.py　#client
-│       ├── cartpole_server.py  	#server
-│       └── test.sh
-├── __init__.py
-├── models
-│   ├── action_dist.py
-│   ├── catalog.py #配置model MODEL_DEFAULTS
-│   ├── fcnet.py #fully connected network
-│   ├── __init__.py
-│   ├── lstm.py #LSTM
-│   ├── misc.py
-│   ├── model.py #自定义model的超类
-│   ├── preprocessors.py #自定义preprocessors的超类
-│   ├── pytorch
-│   │   ├── fcnet.py
-│   │   ├── __init__.py
-│   │   ├── misc.py
-│   │   ├── model.py
-│   │   └── visionnet.py
-│   ├── README.txt
-│   └── visionnet.py #vision network for image observations
-├── optimizers
-│   ├── async_gradients_optimizer.py　#异步计算gradients
-│   ├── async_replay_optimizer.py
-│   ├── async_samples_optimizer.py #异步sample
-│   ├── __init__.py
-│   ├── multi_gpu_impl.py
-│   ├── multi_gpu_optimizer.py
-│   ├── policy_optimizer.py
-│   ├── replay_buffer.py
-│   ├── segment_tree.py
-│   ├── sync_replay_optimizer.py
-│   ├── sync_samples_optimizer.py
-│   └── tests
-│       └── test_segment_tree.py
-├── README.md
-├── rollout.py 有关于checkpoint恢复的代码
-├── scripts.py
-├── test
-│   ├── __init__.py
-│   ├── mock_evaluator.py
-│   ├── test_catalog.py
-│   ├── test_checkpoint_restore.py
-│   ├── test_env_with_subprocess.py
-│   ├── test_evaluators.py
-│   ├── test_external_env.py
-│   ├── test_filters.py
-│   ├── test_local.py
-│   ├── test_lstm.py
-│   ├── test_multi_agent_env.py
-│   ├── test_nested_spaces.py
-│   ├── test_optimizers.py
-│   ├── test_policy_evaluator.py
-│   ├── test_rollout.sh
-│   └── test_supported_spaces.py
-├── train.py
-├── tuned_examples 一些很好用的超参设定
-│   ├── atari-a2c.yaml
-│   ├── atari-apex.yaml
-│   ├── atari-dist-dqn.yaml
-│   ├── atari-dqn.yaml
-│   ├── atari-duel-ddqn.yaml
-│   ├── atari-impala.yaml
-│   ├── atari-ppo.yaml
-│   ├── cartpole-grid-search-example.yaml
-│   ├── generate_regression_tests.py
-│   ├── halfcheetah-ddpg.yaml
-│   ├── hopper-ppo.yaml
-│   ├── humanoid-es.yaml
-│   ├── humanoid-ppo-gae.yaml
-│   ├── humanoid-ppo.yaml
-│   ├── hyperband-cartpole.yaml
-│   ├── mountaincarcontinuous-apex-ddpg.yaml
-│   ├── mountaincarcontinuous-ddpg.yaml
-│   ├── pendulum-apex-ddpg.yaml
-│   ├── pendulum-ddpg.yaml
-│   ├── pendulum-ppo.yaml
-│   ├── pong-a3c-pytorch.yaml
-│   ├── pong-a3c.yaml
-│   ├── pong-apex.yaml
-│   ├── pong-dqn.yaml
-│   ├── pong-impala-vectorized.yaml
-│   ├── pong-impala.yaml
-│   ├── pong-ppo.yaml
-│   ├── pong-rainbow.yaml
-│   ├── regression_tests
-│   │   ├── cartpole-a3c-pytorch.yaml
-│   │   ├── cartpole-a3c.yaml
-│   │   ├── cartpole-ars.yaml
-│   │   ├── cartpole-dqn.yaml
-│   │   ├── cartpole-es.yaml
-│   │   ├── cartpole-pg.yaml
-│   │   ├── cartpole-ppo.yaml
-│   │   ├── __init__.py
-│   │   ├── pendulum-ddpg.yaml
-│   │   ├── pendulum-ppo.yaml
-│   │   └── regression_test.py
-│   ├── run_regression_tests.py
-│   ├── swimmer-ars.yaml
-│   └── walker2d-ppo.yaml
-└── utils
-​    ├── actors.py
-​    ├── compression.py
-​    ├── error.py
-​    ├── explained_variance.py
-​    ├── filter_manager.py
-​    ├── filter.py
-​    ├── __init__.py
-​    ├── policy_client.py
-​    ├── policy_server.py
-​    ├── schedules.py
-​    ├── seed.py
-​    ├── tf_run_builder.py
-​    ├── timer.py
-​    └── window_stat.py
+### 工作流程
+
+从一个运行的案例来说明其构造原理是合适的。
+
+```bash
+python ray/python/ray/rllib/train.py --run DQN --env CartPole-v0
+```
+
+#### **1. `train.py`**
+
+- 基本的分解参数
+
+- 调用相应算法和env
+
+- 后续的运行交给`tune`库来控制.　在运行时候，自然会调用相应的`RLlib`内容
+
+  > 这个库也有很多东西。暂时没有深入
+
+#### **2. `agents/dqn/dqn.py`**
+
+- agent作为最顶层的实现
+
+  > DQN(Deep Q Network)是一种RL算法，基于这种算法封装成为一个agent, 便于train/store/restore等等
+
+- 基本参数的设定(在通用agent设定的基础上改写)
+
+  > 包括是否为double Q-learning, 设定hidden layers的大小, n-step的设定.
+  >
+  > replay buffer的设定, adam算法的设定,并行性的设定(workers数量)
+
+- 定义了`DQNAgent`类，继承自`Agent`类，而`Agent`类继承自`tune`库中一个类`Trainable`. 这就是为什么`tune`库可以方便地控制运行agent
+
+- 上述`DQNAgent`类使用`dqn_policy_graph`来构造`evaluator`
+
+  > 上次提到evaluator是利用policy与环境交互，获得trajectory, 然后利用它来更新policy(在deep Q-learning中是更新两个Q network的参数). 这部分由policy graph来做，返回一定的度量metrics
+  >
+  > 同时evaluator可以使本地的也可以是remote. 相当于可以并行
+
+- 最后的结果由`collect_metrics`来获取, 然后返回到`tune`内的控制单元，看是否需要继续训练
+
+  **关于deep Q-learning**
+
+  基本算法[CS 294-112 at UC Berkeley](http://rail.eecs.berkeley.edu/deeprlcourse/)
+
+  <img src="RLlib-2/1542811715675.png" style="zoom:70%">
+
+  double Q-Learning
+
+  <img src="RLlib-2/1542811752026.png" style="zoom:70%">
+
+  同步异步的并行方式
+
+  ![1542813229787](RLlib-2/1542813229787.png)
+
+#### **3. `dqn_policy_graph.py`**
+
+- 继承自`TFPolicyGraph`, 后者继承自`PolicyGraph`
+
+  > 前面提到过，PolicyGraph就是将policy封装起来，然后实现一些方法，比如计算下一步action, 处理trajectory, 计算gradients, 更新参数等等
+  >
+  > `TFPolicyGraph`是实现的一个比较方便的基于tensorflow的模板，另外实现的还有`TorchPolicyGraph`以及`KerasPolicyGraph`　但是build-in算法里面大部分是使用tensorflow实现的
+
+- 实现deep q-learning
+
+####  4. `policy_evaluator.py` 
+
+- 将`policy graph`与`env`包装起来，实现来收集experience
+
+  >  可以有很多的复制品，在Ray中作为actor来实现。
+
+#### **5. `policy_optimizer.py`**
+
+- control plane
+
+  > 需要将evaluator传入
+
+- 继承此类的优化算法
+
+  > 比如异步计算gradients, 异步/同步利用replay buffer, 异步/同步采样, 多GPU等等
+
+### 其他重要组件
+
+#### **1. `models`**
+
+> 功能: 输入obeservations输出logits的神经网络
+
+- 提供`tensorflow`和`pytorch`两种实现，但是后者实现不完全，所以基本上默认是使用`tensorflow`
+
+- `Preprocessor`
+
+  - image 预处理
+  - One hot预处理
+  - 等等
+
+- 多种网络
+
+  - fully connected
+  - CNN
+  - LSTM
+
+- `ActionDistribution`
+
+  > 由上面得到的logits来决定下一步的action
+
+  - 离散的(Categorical)
+  - 连续的(Gaussian)
+  - 确定性的(Deterministic)
+  - 多个动作等等
+
+#### **2. `tuned_examples`**
+
+> 已经优化好的算法的设定。比如dqn算法使用多少step, 比如使用多少gpu, 比如cnn如何设定卷积核等等
+
+### 总结
+
+从代码上来看RLlib与tune lib密不可分，而这两个又与Ray底层以及tensorflow密不可分
+
+如果抛开这些依赖，实现顺序可能是：
+
+1. model 各种神经网络
+2. policy graph 在model的基础上实现action的选择
+3. evaluator 将policy graph以及env包装起来，以实现交互
+4. optimizer 复制evaluator到不同机器上，优化参数
+5. agent 对整个训练的封装
 
 
 
+另外还有一些事情没有做完
 
+**TODO**
 
-
-
-
-
-### AlphaGoZero 案例
-
-![1542680444658](RLlib-2/1542680444658.png)
-
-
+- [ ] 看完[CS 294-112 at UC Berkeley](http://rail.eecs.berkeley.edu/deeprlcourse/). 目的是对RL有个更加现代的看法，并能感知到未来算法的发展趋势，以对RL框架有新的认识，甚至是改进。
+- [ ] 深入tune库，由于RLlib大量依赖tune
 
