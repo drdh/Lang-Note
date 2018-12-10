@@ -1,8 +1,22 @@
-## ray的安装
+*作为ray系列的总目录*
 
-直接使用`pip install ray`可能在改为国内源之后找不到
+- `ray`
+  - `Ray-Overview.md` 介绍`Ray`的总架构
+- `RLlib`
+  - `RLlib.md` 介绍`RLlib`的架构
+  - `RLlib-2.md`深入`RLlib`的代码部分
+  - `RLlib-3.md`查找现有的关于`RLlib`的性能评测
 
-解决办法：在[ray install](https://ray.readthedocs.io/en/latest/installation.html)页面下载相应版本
+- `Tune`
+  - `Tune.md`介绍`tune`的框架
 
-再使用`pip install -U [link to wheel]`安装
+
+
+
+
+**目标问题**：鉴于RL的特性，可移植、拓展RL框架应该具有怎样的特征？如何实现？
+
+**一种解决思路**：从现有的框架出发：【１】该框架具有哪些特点？实现细节？是如何实现可移植与可拓展的？【２】该框架具有哪些不足？有哪些改进措施？
+
+**与Julia的联系**：Julia作为一种编程语言，也相当于是一种工具、一种框架，那么在该工具下如何构建RL框架？如何将上述的RL框架特点与Julia的特征对应起来，实现更完善、更易用、高性能甚至能随着RL的发展不断拓展的新框架？
 
