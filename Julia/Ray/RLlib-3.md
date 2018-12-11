@@ -61,6 +61,8 @@
 
    ```bash
    conda create -n tf_env tensorflow
+   conda install nb_conda #支持jupyter notebook虚拟环境
+   conda install jupyter
    conda activate tf_env
    conda deactivate
    ```

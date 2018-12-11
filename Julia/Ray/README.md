@@ -2,6 +2,7 @@
 
 - `ray`
   - `Ray-Overview.md` 介绍`Ray`的总架构
+  - `Algorithms-in-Ray.md`　讨论在整个`ray`系列中出现的算法
 - `RLlib`
   - `RLlib.md` 介绍`RLlib`的架构
   - `RLlib-2.md`深入`RLlib`的代码部分
