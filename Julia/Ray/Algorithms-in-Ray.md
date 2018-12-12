@@ -214,9 +214,104 @@ DDPG实现与DQN实现很像。
 
 [Rainbow: Combining Improvements in Deep Reinforcement Learning](https://arxiv.org/abs/1710.02298)
 
-Rainbow是作为DQN的改进
+**DQN**
 
+DQN是第一个使用DL直接从高维数据中学习control policy作为RL输入的成功的模型。
 
+该论文中提到了DL应用于RL面临的困境：
+
+- 大部分成功的DL应用都需要大量标注了的数据。另一方面，RL必须要从标量reward中学习，而这种reward通常是稀疏的、充满噪声的、延迟的。
+- 大部分DL要求采样的数据必须是独立的。但是RL通常是连续的高度相关的状态。
+- DL通常假设数据的分布是固定的，但是RL的数据分布却通常随着behaviours的不同而不同
+
+本论文为了解决数据相关问题以及不稳定的分布问题，使用了Experience Replay机制，也就是每次的转移都存起来，训练的时候随机从存储里面抽取。
+
+文章使用了Q Learning, 所以介绍了Q Learning
+
+$Bellman\ equation$
+$$
+Q^*(s,a)=\mathbb{E}_{s' \sim \mathcal{E}}\Big[r+\gamma \max_{a'}Q^*(s',a')\Big|s,a\Big]
+$$
+可以使用$value\ iteration$来收敛到该optimal action-value funtion
+$$
+Q_{i+1}(s,a)=\mathbb{E}\Big[{r+\gamma\max_{a'}} Q_{i}(s',a')\Big|s,a\Big]
+$$
+$Q_i \to Q^*\ \text{as}\ i\to \infty $. 但是实际上这种方式是完全不可行的，因为对于每个sequence, action-value函数的估计是分开的，这样就失去了generalisation. 所以通常会使用function approximator来估计action-value 函数，即$Q(s,a;\theta)\approx Q^*(s,a)$. 通常会使用linear function, 偶尔使用non-linear函数近似，比如NN. 
+
+这篇论文中使用的他们称为Q-network, 可以通过如下的loss function来优化($L_i(\theta_i)$表示每个循环i都会改变)
+$$
+L_i(\theta_i)=\mathbb{E}_{s,a\sim \rho(\cdot)}\Big[(y_i-Q(s,a;\theta_i))^2 \Big]
+$$
+其中$y_i$为target value.它会随着循环而改变，这不同于监督学习。
+$$
+y_i=\mathbb{E}_{s'\sim \mathcal{E}}\Big[r+\gamma\max_{a'}Q(s',a';\theta_{i-1}\Big|s,a\Big]
+$$
+$\rho$表示behaviour distribution.
+
+Loss function的微分为
+$$
+\nabla_{\theta_i}L_i(\theta_i)=\mathbb{E}_{s,a\sim\rho(\cdot);s'\sim\mathcal{E}}
+\Big[\Big(r+\gamma\max_{a'}Q(s',a';\theta_{i-1})-Q(s,a;\theta_i)\nabla_{\theta_i}Q(s,a;\theta_i)	 \Big)
+\Big]
+$$
+注意上述算法有如下的特点
+
+- model-free: 并没有构建关于estimator $\mathcal{E}$的模型
+- off-policy: 学习的是greedy strategy $a=\max_{a}Q(s,a;\theta)$, 但是使用的behavior通常是$\epsilon$-greedy的
+
+接下来就是详细介绍了DQN算法
+
+![1544622123874](Algorithms-in-Ray/1544622123874.png)
+
+需要注意的是，由于原始的像素数据太大，并不适合作为模型输入，所以添加了一个$\Phi$函数来预处理image
+
+**Rainbow**
+
+在DQN提出来之后，有许多的论文提出了改进意见，这篇文章是抽取6种改进，然后将它们组合进行评测。使用的extensions 如下:
+
+1. Double Q-Learning
+
+   首先注意到DQN是在减小如下loss
+   $$
+   (R_{t+1}+\gamma_{t+1}\max_{a'}q_{\bar{\theta}}(S_{t+1},a')-q_{\theta}(S_t,A_t))^2
+   $$
+   注意到其中的max部分，选择action使用的是target value, 对选用的action来评估也是使用target value, 这样有可能过高地估计某个action的效力，导致整个q都偏高。改进方式就是使用不同的value. 考虑到计算量，DDQN使用的是，$q_\theta$来选择action, 由$q_{\bar{\theta}}$来评估。式子如下：
+   $$
+   (R_{t+1}+\gamma_{t+1}q_{\bar{\theta}}(S_{t+1},\arg \max_{a'}q_{\theta}(S_{t+1},a'))-q_{\theta}(S_t,A_t))^2
+   $$
+
+2. Prioritized replay
+
+   DQN从replay buffer中取样是均匀的，但是有一些数据更加有价值，应该更多地去学。所以该方法使用了某种概率$p_t$来选择，该概率与last encountered absolute TD error:
+   $$
+   p_t \propto \Big| R_{t+1}+\gamma_{t+1}\max_{a'}q_{\bar{\theta}}(S_{t+1},a')-q_{\theta}(S_t,A_t) \Big|^{\omega}
+   $$
+   其中$\omega$是决定分布形状的参数。新加进来的数据会有最大的可能性。
+
+3. Dueling Network
+
+   不明白，暂略。
+
+4. Multi-step Learning
+
+   注意DQN使用了第一个reward然后后面就是估计值，其实还可以使用多个
+   $$
+   R_t^{(n)}=\sum_{k=0}^{n-1}\gamma_{t}^{(k)}R_{t+k+1}\\
+   $$
+   相应的，loss改为
+   $$
+   (R_t^{(n)}+\gamma_t^{(n)}\max_{a'}q_{\bar{\theta}}(S_{t+n},a')-q_\theta(S_t,A_t))^2
+   $$
+
+5. Distributional RL
+
+   不明白，暂略。
+
+6. Noisy Nets
+
+   不明白，暂略。
+
+这里面好几个我自己没有接触过，更加详细的说明留在以后。
 
 ##### 1.2.4. Policy Gradients
 
@@ -226,7 +321,7 @@ vabilla policy gradients.下面的PPO表现更好
 
 
 
-##### 1.2.5. Proximal Policy Optimization (PPO)
+#####  1.2.5. Proximal Policy Optimization (PPO)
 
 [Proximal Policy Optimization Algorithms](https://arxiv.org/abs/1707.06347)
 
