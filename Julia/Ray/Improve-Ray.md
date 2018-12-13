@@ -4,6 +4,8 @@
 
 Ray 本身并不是完美的，对于某些特性，有研究人员提出了别的改进的策略。也就是RLgraph, 其提出的基本问题就是，各个组件之间相互交错，对于测试、执行以及代码的重用都很不友好，于是提出了自己的解决方案，并且做了部分开源实现[RLgraph](https://github.com/rlgraph/rlgraph)以及相关文档[RLgraph docs](https://rlgraph.readthedocs.io/en/latest/). 
 
+部分内容需要深入代码才能看明白。
+
 由于算法的不稳定性、超参的敏感性以及特征不同的交流方式，RL任务的实现、执行、测试都很具有挑战性。
 
 ## 1. Introduction
@@ -72,7 +74,53 @@ RLgraph用三个不同的阶段来组装。
 2. **Assembly phase** 创建一个很少类型、维度的dataflow graph. 这是通过调用root componet的API实现的。
 3. **Graph compilation/building phase** 
 
+案例如下：
+
+1. **Component composition and nesting** 所有的components都被定义为Python objects. Components很有逻辑地组织进root container component, 作为它的sub-components.而root component则对外暴露API. 注意到一个Agent 能够定义多个root component, 这样就能并行地act 和learn不同的policy
+
+   ```python
+   def init(self, *args, **kwargs):
+   	self.register_api("update", self.update)
+       
+   def update(self, batch_size):
+   	sample = self.call(memory.sample, batch_size)
+   	s, a, r, next_s, t = self.call(splitter.split, sample)
+   	loss = self.call(dqn_loss.get_loss, s, a, r, next_s, t)
+   	variables = self.call(policy.get_variables)
+   	update = self.call(optimizer.step, loss, variables)
+   	return update, loss
+   
+   # Envisioned API: Implicit ’call’ via decorators.
+   # Use space-hints to auto-split, merge nested spaces.
+   @rlgraph.api_method(split=True)
+   def observe(records)
+   	self.memory.insert(records)
+   ```
+
+2. **Assembling the meta-graph** 然后用户可以定义流过model的dataflow, 这是通过components之间的连接实现的。在这个阶段data types和shape info都是不需要的。每个component都有一系列的API-methods. 如上面的程序所示。data在这些method中解释为抽象meta-graph operator objects, 它们的shapes和types会在build的时候推断出来。在prototype实现里面，显式地使用component call method, 对于所有的API唤醒。之后会实现一个更加友好的。
+
+   API 调用的return值现在就可以传递给其他的API-methods或sub-component的API-method或者数值计算的graph function, 
+
+   一个简单的meta graph算法如下
+
+   ![1544710729834](Improve-Ray/1544710729834.png)
+
+3. **Building computation graphs ** 
+
 ### 3.4 Agent API
+
+```python
+abstract class rlgraph.agent:
+	# Build with default devices, variable sharing, ..
+	def build(options)
+	def get_actions(states, explore=True, preprocess=True)
+    # Update from internal buffer or external data.
+	def update(batch=None)
+	# Observe samples for named environments.
+	def observe(state, action, reward, terminal, env_id)
+	def get_weights, def set_weights
+	def import_model, def export_model
+```
 
 ## 4. Executing Graphs
 
@@ -84,7 +132,11 @@ RLgraph用三个不同的阶段来组装。
 
 ### 5.1 Results
 
+![1544711157283](Improve-Ray/1544711157283.png)
+
 ![1544701655171](Improve-Ray/1544701655171.png)
+
+![1544711368106](Improve-Ray/1544711368106.png)
 
 ### 5.2 Discussion
 
