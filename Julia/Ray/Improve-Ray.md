@@ -1,0 +1,88 @@
+*介绍Ray系列的缺点并提出改进意见*
+
+[RLgraph: Flexible Computation Graphs for Deep Reinforcement Learning](https://arxiv.org/abs/1810.09028)
+
+Ray 本身并不是完美的，对于某些特性，有研究人员提出了别的改进的策略。也就是RLgraph, 其提出的基本问题就是，各个组件之间相互交错，对于测试、执行以及代码的重用都很不友好，于是提出了自己的解决方案，并且做了部分开源实现[RLgraph](https://github.com/rlgraph/rlgraph)以及相关文档[RLgraph docs](https://rlgraph.readthedocs.io/en/latest/). 
+
+由于算法的不稳定性、超参的敏感性以及特征不同的交流方式，RL任务的实现、执行、测试都很具有挑战性。
+
+## 1. Introduction
+
+针对不同的方面，已经有很多的RL库实现了。比如OpenAI, TensorForce, Ray RLlib. 虽然这些库都有各自不同的目的，但是都面临一些相似的问题，并且导致测试、分布式执行、扩展的困难。其根源就在于**a lack of separation of concerns**.  定义在RL算法中的逻辑组块部分与特定深度学习框架相关的代码紧紧结合在一起，比如说Ray RLlib里面就是这样，没有完整地分离，使用TensorFlow的部分就是完全依赖的。这就导致了API的不良定义，同时也让各个组块的重用与测试变得困难。相似地，RL复杂的dataflow与control flow也纠缠在一起。
+
+![1544695590416](Improve-Ray/1544695590416.png)
+
+这篇文章的核心贡献就是RLgraph. 解决上述麻烦的办法就在于将logical component composition, creation of operations, variables, placeholders, local and distributed execution of component graph分离。如上图所示。设计的核心就在于meta graph结构，这个graph主要作用是，集成、连接各个组块，比如buffers或NN, 并且将这些功能用统一的API表示。很重要的一点是，这个graph与特定的表示实现（比如TF变量）不依赖。这就意味着，meta graph可以同时建立static graphs和define-by-run execution. 也同时支持TensorFlow和PyTorch.
+
+**sth omit there**
+
+这种设计有如下几个优势：
+
+1. **Distributed execution**. 将设计与执行分开，意味着agent可以实现在任何分布执行的框架里，比如distributed TensorFlow, Ray, Uber's Horovod.
+2. **Static and define-by-run backends**. meta graph的设计并不强加限制在只能它自己的执行方式，这就意味着，不仅能支持end-to-end static graphs, 包括control flow, 也能支持define-by-run semantics 比如PyTorch, 这一点通过统一的接口实现
+3. **Fast development cycles and testing**. 这是由于各个组件的分离。
+
+## 2. Motivation
+
+### 2.1 RL workloads
+
+执行RL最中心的困难就在于需要频繁地与环境交互，贯穿于training, evaluatin 以及update.其特征如下：
+
+- **State management**. 样本trajectories一般是分布式采样，workers同时与env的复制品进行交互。在一个或者多个learner与样本搜集者之间，算法必须保持model weights的一致性，这就需要同步和异步的策略了。另外，需要将样本高效地传递给learner, 有时候需要共享内存。
+- **Resource requirements and scale**. 最近成功的RL算法需要成百上千的CPU以及几百个GPU. 与此相反，有的算法不易并行，却可能只能用一个CPU. 
+- **Models and optimization strategies**. 模型可大可小，将硬件的作用用到极致很困难。
+
+### 2.2. Existing abstractions
+
+- **Reference implementations**. 很多的库仅仅作为一个实现的参考，帮助重新产生研究结果。比如OpenAI baselines和Google's Dopamine 提供了一系列以及优化好的benchmarks比如OPenAI gym以及ALE.  Nervana Coach包含相似的东西，但也加上了一些工具，比如可视化、Hierarchical learning、分布式训练。这种实现在很多组块之间共享了算法，比如NN结构并且通常叶忽略了实际应用的考虑。所以重新利用他们到不同的模式就很困难
+- **Centralized control. **Ray RLlib定义了一系列抽象，它依赖Ray的actor模型来执行算法，正如前面讲到的，RLlib实现中很重要的就是optimizer, 每个optimization都有一个*step()*函数，这个函数分发采样任务给remote actor, 管理buffers以及更新weights. RLlib自己最宣传的一点就是，在optimizer的执行与RL算法的定义（由policy graph）分开。然而每个optimizer同时封装了local和distributed机器的执行，这意味着，比如说，只有专用的多GPU optimizer能够同步地在不同GPU上分离input. 使用optimizer驱动control flow的另一个坏处就是RLlib混合Python control flow, Ray call以及TensorFlow call进它的实现里。所以使用RLlib实现的算法就不容易移植，只能在Ray上执行。相反地RLgraph就不一样了，它支持端到端的计算图，包括in-graph control-flow, 然后就可以将它们分布在Ray, distributed TF等等任何其他的。
+- **Fixed end-to-end graphs** 主要是TensorForce的问题，略。
+
+## 3. Framework Design
+
+### 3.1. Design principles
+
+没有占优势的单一模式，设计框架就必须解决灵活的原型、可重用的组块以及易拓展机制之间的矛盾。RLgraph的设计是基于如下几个观点的：
+
+- **Separating algorithms and execution** RL算法需要复杂的控制流，来协调分布式的采样与内部训练。分割这些组块很困难但是非常有必要。RLgraph通过graph executors来管理local execution. 分布式的就被指派给专用的distributed executors, 比如在Ray上，或者作为graph的一部分，组建到executor内部，比如distributed TF.
+- **Shared components with strict interfaces** 
+- **Sub-graph testing** 
+
+### 3.2. Components and meta graph
+
+### 3.3 Building component graphs
+
+### 3.4 Agent API
+
+## 4. Executing Graphs
+
+### 4.1 Graph executors.
+
+### 4.2 Backend support and code generation
+
+## 5. Evaluation
+
+### 5.1 Results
+
+![1544701655171](Improve-Ray/1544701655171.png)
+
+### 5.2 Discussion
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

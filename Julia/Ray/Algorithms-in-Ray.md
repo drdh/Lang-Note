@@ -109,7 +109,7 @@ for s in reversed(range(s_max+1)):
 
 #### 2.1. Variant Generation (Grid Search/Random Search)
 
-无需多言。
+不必过多介绍。
 
 #### 2.2. HyperOpt Search (Tree-structured Parzen Estimators)
 
@@ -180,7 +180,7 @@ ray里面其实是调用这个库来实现的。
 
 > Experience collection can scale to hundreds of CPU workers due to the distributed prioritization of experience prior to storage in replay buffers
 
-
+***TODO***
 
 ##### 1.1.2. Importance Weighted Actor-Learner Architecture (IMPALA)
 
@@ -188,7 +188,7 @@ ray里面其实是调用这个库来实现的。
 
 在IMPALA中，一个中心的learner在一个很紧凑的循环里执行SGD, 同时异步地从许多actor processes里面拉取样本batches
 
-
+***TODO***
 
 #### 1.2. Gradient-based
 
@@ -196,9 +196,7 @@ ray里面其实是调用这个库来实现的。
 
 [Asynchronous Methods for Deep Reinforcement Learning](https://arxiv.org/abs/1602.01783)
 
-
-
-
+***TODO***
 
 ##### 1.2.2. Deep Deterministic Policy Gradients (DDPG, TD3)
 
@@ -206,7 +204,7 @@ ray里面其实是调用这个库来实现的。
 
 DDPG实现与DQN实现很像。
 
-
+***TODO***
 
 ##### 1.2.3. Deep Q Networks (DQN, Rainbow, Parametric DQN)
 
@@ -290,7 +288,7 @@ $$
 
 3. Dueling Network
 
-   不明白，暂略。
+   ***TODO***
 
 4. Multi-step Learning
 
@@ -305,11 +303,11 @@ $$
 
 5. Distributional RL
 
-   不明白，暂略。
+   ***TODO***
 
 6. Noisy Nets
 
-   不明白，暂略。
+   ***TODO***
 
 这里面好几个我自己没有接触过，更加详细的说明留在以后。
 
@@ -319,13 +317,13 @@ $$
 
 vabilla policy gradients.下面的PPO表现更好
 
-
+***TODO***
 
 #####  1.2.5. Proximal Policy Optimization (PPO)
 
 [Proximal Policy Optimization Algorithms](https://arxiv.org/abs/1707.06347)
 
-
+***TODO***
 
 #### 1.3. Derivative-free
 
@@ -333,10 +331,10 @@ vabilla policy gradients.下面的PPO表现更好
 
 [Simple random search provides a competitive approach to reinforcement learning](https://arxiv.org/abs/1803.07055)
 
-
-
-
+***TODO***
 
 ##### 1.3.2. Evolution Strategies
 
 [Evolution Strategies as a Scalable Alternative to Reinforcement Learning](https://arxiv.org/abs/1703.03864)
+
+***TODO***
