@@ -50,7 +50,27 @@ Ray 本身并不是完美的，对于某些特性，有研究人员提出了别�
 
 ### 3.2. Components and meta graph
 
+**Components. ** 然后来讨论RLgraph中component graph的设计，为了简化，使用TF作为基本的后端，其他后端的实现，比如PyTorch留在后面。RLgraph的核心抽象就是Component 类，这个类通过graph function来封装任意的计算。考虑一个replay buffer component, 这个component对外的功能是插入experiences和根据优先权重来批量采样。实现这样的buffer在命令式的语言，比如python 是非常直接的，但是将它作为TF Graph的一部分却需要通过控制流操作创建和管理很多的变量。将很多种这样的组件按可重用的方式组建很困难。但是使用define-by-run的框架比如PyTorch却很简单，然而在大容量分布式执行与程序导出层面上却存在困难。
+
+现有的高层次的NN API比如Sonnet, Keras, Gluon 或者TF.Learn都专注于构建于训练NN, 将RL实现在这样的框架里面通常需要将命令式的python与DL graph objects混合起来，这会导致上面提到的设计问题。
+
+当构建在static graph后端上时，RLgraph的component API能够快速构建端到端的可微分的dataflow graph, 利用in-graph control flow. 并且，graph builder和executor会自动管理burdensome tasks,比如变量和placeholder的创建, scopes, input spaces以及device assignments.
+
+**Example component** 下图是一个简化的prioritized replay buffer componenet.
+
+![1544704240525](Improve-Ray/1544704240525.png)
+
+所有的componenetd都继承自一个通用的component 类，然后使用它们自己的sub-components来构建逻辑。这个buffer有一个segment tree sub-component来管理优先级顺序。它暴露的API methods有insert, sample和update, 这些又关联一些graph function. 简单的对象mothod与RLgraph API method的不同点在于，registered API methods是identified然后被管理在build中。Input shape可以被自动推断，从inputs到root component.
+
+开发者能够声明一个method为API method ，通过调用register function. 从技术上说，并不是一个component所有的功能都需要注册为API method. 用户也可以实现helper function或utilities, 比如说使用TF操作但是不将他们包含进API methos, 如果并不需要从外部components调用他们的话。
+
 ### 3.3 Building component graphs
+
+RLgraph用三个不同的阶段来组装。
+
+1. **Component composition phase** 这个阶段中，定义、结合component objects, 也包括sub-components的任意嵌套
+2. **Assembly phase** 创建一个很少类型、维度的dataflow graph. 这是通过调用root componet的API实现的。
+3. **Graph compilation/building phase** 
 
 ### 3.4 Agent API
 
