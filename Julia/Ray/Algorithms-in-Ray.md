@@ -14,7 +14,7 @@
 
 本论文首先介绍当前的hyperparameter调整的方式分为如下
 
-- Paralle Search
+- Parallel Search
 
   并行多个进程，每个进程不同的hyperparameter. 最后将结果比较，选择最好的那个
 
@@ -204,7 +204,35 @@ ray里面其实是调用这个库来实现的。
 
 DDPG实现与DQN实现很像。
 
-***TODO***
+DDPG同时学习Q-Function和policy. 使用off-policy数据和Bellman等式来学习Q-function, 然后使用Q-function来学习policy.
+
+这种方式与Q-learning联系非常紧密，也是有同样的动机：如果知道了optimal action-value函数$Q^*(s,a)$, 然后如果给定state, 就可以计算出optimal action:
+$$
+a^*(s) = \arg \max_a Q^*(s,a)
+$$
+DDPG交错学习一个$Q^*(s,a)的$approximator和一个$a^*(s)$的approximator,  
+
+对于离散的action还可以直接计算最大值，但是对于连续的，就不能遍历计算。但是由于action space是连续的，$Q^*(s,a)$就假定对于$a$可微，policy $\mu (s)$就利用了这个事实。所以，现在不需要每次都耗费资源计算$\max_a Q(s,a)$, 而是用$\max_aQ(s,a)\approx Q(s,\mu(s))$来近似。
+
+注意到DDPG是off-policy的，而且仅适用于连续的action spaces. 可以看为是连续版本的DQN.
+
+DDPG包含两个部分：学习Q-function和学习policy
+
+*The Q-Learning Side of DDPG*
+
+首先是关于optimal action-value 函数的Bellman 等式
+$$
+Q^*(s,a) = \underset{s' \sim P}{{\mathrm E}}\left[r(s,a) + \gamma \max_{a'} Q^*(s', a')\right]
+$$
+其中$s'\sim P$表示下一个state $s'$ 是依据分布$P(\cdot|s,a)$来从环境中采样的。
+
+
+
+
+
+*The Policy Learning Side of DDPG*
+
+
 
 ##### 1.2.3. Deep Q Networks (DQN, Rainbow, Parametric DQN)
 
@@ -317,13 +345,119 @@ $$
 
 vabilla policy gradients.下面的PPO表现更好
 
-***TODO***
+算法的核心就是将那些能够获得高return的action的概率提高，而将地return的action概率降低。
+
+首先这是一个on-policy的算法，适用的env的action可分离可连续。
+
+用$\pi_\theta$表示含参数$\theta$的policy, 用$J(\pi_\theta)$表示有终结的没有discount的return. 相应的gradient为
+$$
+\nabla_{\theta}J(\pi_\theta)=\mathop{E}_{\tau\sim\pi_\theta}
+\Big [ \sum_{t=0}^T \nabla_\theta \log \pi_\theta(a_t|s_t)A^{\pi_\theta}(s_t,a_t)
+\Big]
+$$
+其中$\tau$表示trajectory, $A^{\pi_\theta}$表示advantage function, 也就是选择$a_t$与所以action的return的均值的差。
+
+PG算法就是通过stochastic gradient ascent来更新policy的参数的
+$$
+\theta_{k+1}=\theta_k+\alpha \nabla_{\theta}J(\pi_{\theta_k})
+$$
+PG是一个on-policy的，也就是说它的exploration是依据最新的policy采样而来的。所以action 的随机性取决于初始的设置与训练的过程。随着训练的进行，policy通常会慢慢减小随机性，这样就容易导致得到一个局部最优解，而且没有办法出来。
+
+其算法如下
+
+![](https://spinningup.openai.com/en/latest/_images/math/47a7bd5139a29bc2d2dc85cef12bba4b07b1e831.svg)
 
 #####  1.2.5. Proximal Policy Optimization (PPO)
 
 [Proximal Policy Optimization Algorithms](https://arxiv.org/abs/1707.06347)
 
-***TODO***
+首先需要介绍Trust Region Policy Optimization(TRPO)
+
+**TRPO**
+
+TRPO是建立在PG基础上的。TRPO使用尽可能大的step来提高performance, 并且要满足新的policy要接近旧的policy. 由于policy也是一种概率，所以这种限制是使用KL-Divergence来实现的。
+
+与普通的PG不同的是新旧的policy尽可能接近，这是因为一个小小的坏的step都可能使整个policy效果不好。TRPO解决了这个，能够很快并且单调地提升performance.
+
+与PG类似，TRPO也是一个on-policy的，并且env的action空间可离散可连续。
+
+理论上TRPO更新的是
+$$
+\begin{aligned}
+\theta_{k+1} = \arg \max_{\theta} \; & {\mathcal L}(\theta_k, \theta) \\ \text{s.t.} \; & \bar{D}_{KL}(\theta || \theta_k) \leq \delta
+\end{aligned}
+$$
+其中$\mathcal L(\theta_k, \theta)$是surrogate advantage, 就是在度量policy $\pi_\theta$相比与旧的policy $\pi_{\theta_k}$的性能
+$$
+{\mathcal L}(\theta_k, \theta) = \mathop{E}_{s,a \sim \pi_{\theta_k}}{\Bigg[     \frac{\pi_{\theta}(a|s)}{\pi_{\theta_k}(a|s)} A^{\pi_{\theta_k}}(s,a) }\Bigg]
+$$
+然后$ \bar{D}_{KL}(\theta || \theta_k)$是一种平均的KL-divergence, 关于旧的policy遍历的所有的states
+$$
+\bar{D}_{KL}(\theta || \theta_k) = \mathop{E}_{s \sim \pi_{\theta_k}}{\Big[     D_{KL}\left(\pi_{\theta}(\cdot|s) || \pi_{\theta_k} (\cdot|s) \right) \Big ]}
+$$
+
+
+但是理论上的update并不是很容易计算，所以TRPO做了一些近似，使用泰勒展开，同时对$\mathcal L$与$D_{KL}$
+$$
+\begin{aligned}
+{\mathcal L}(\theta_k, \theta) &\approx g^T (\theta - \theta_k)				 \\ 
+\bar{D}_{KL}(\theta || \theta_k) & \approx \frac{1}{2} (\theta - \theta_k)^T H (\theta - \theta_k)
+\end{aligned}
+$$
+所以最终的近似的问题就变成
+$$
+\begin{aligned}
+\theta_{k+1} = \arg \max_{\theta} \; & g^T (\theta - \theta_k) \\ \text{s.t.} 
+\;  & \frac{1}{2} (\theta - \theta_k)^T H (\theta - \theta_k) \leq \delta
+\end{aligned}
+$$
+这个问题可以通过Lagrangian duality方式得到分析解
+$$
+\theta_{k+1} = \theta_k + \sqrt{\frac{2 \delta}{g^T H^{-1} g}} H^{-1} g
+$$
+如果到此为止，使用上面的结果，那么算法就是在计算Natural Policy Gradient. 问题在于，由于泰勒展开的近似性，这个更新可能不满足KL的约束，或者实际上在更新surrogate advantage.
+
+TRPO加上了一个小改动: a backtracking line search
+$$
+\theta_{k+1} = \theta_k + \alpha^j \sqrt{\frac{2 \delta}{g^T H^{-1} g}} H^{-1} g
+$$
+其中$\alpha \in (0,1)$是backtracking 系数，而$j$是使$\theta_{k+1}$满足KL约束的最小非负整数。
+
+TRPO的exploration与exploitation同PG
+
+![](https://spinningup.openai.com/en/latest/_images/math/fece98b123fdbe62167dade95a7c53d836ddc5a1.svg)
+
+**PPO**
+
+PPO与TRPO有同样的动机：如何采用最大的step来更新policy而又不更新太多，导致崩坏。TRPO使用了二阶的方式，很复杂，而PPO使用一阶的方式，并且使用一些技巧是新的policy尽可能接近旧的policy.
+
+有两个基本的PPO变体: PPO-Penalty和PPO-Clip
+
+PPO-Penalty: 解决一个近似的问题，就像TRPO那样，但是是将KL限制加到objective中，而不是让它成为一个比较难的约束。同时加上一个系数，并且会随着训练的进行变化。
+
+PPO-Clip: 在objective中没有KL, 根本没有约束。而是在objective中加上一个特殊的clipping, 修建那些可能使新的policy远离旧policy的因素。
+
+与TRPO类似，PPO也是on-policy，同时适用于env的action为离散或者连续的。
+
+PPO-Clip更新policy的方式为
+$$
+\theta_{k+1} = \arg \max_{\theta} \underset{s,a \sim \pi_{\theta_k}}{{\mathrm E}}\left[     L(s,a,\theta_k, \theta)\right]
+$$
+通常是使用使用几步的 minibatch SGD(SGA)来最大化objective. 其中$L$是：
+$$
+L(s,a,\theta_k,\theta) = \min\left( \frac{\pi_{\theta}(a|s)}{\pi_{\theta_k}(a|s)}  A^{\pi_{\theta_k}}(s,a), \;\; \text{clip}\left(\frac{\pi_{\theta}(a|s)}{\pi_{\theta_k}(a|s)}, 1 - \epsilon, 1+\epsilon \right) A^{\pi_{\theta_k}}(s,a) \right)
+$$
+其中$\epsilon$是一个很小的超参，就是在限制新旧policy的最大距离。
+
+下面有一个简单的版本
+$$
+L(s,a,\theta_k,\theta) = \min\left( \frac{\pi_{\theta}(a|s)}{\pi_{\theta_k}(a|s)}  A^{\pi_{\theta_k}}(s,a), \;\; g(\epsilon, A^{\pi_{\theta_k}}(s,a)) \right)
+$$
+其中
+$$
+g(\epsilon, A) = \left \{     \begin{array}{ll}     (1 + \epsilon) A & A \geq 0 \\     (1 - \epsilon) A & A < 0.     \end{array}     \right .
+$$
+![](https://spinningup.openai.com/en/latest/_images/math/0a399dc49e3b45664a7edaf485ab5c23a7282f43.svg)
 
 #### 1.3. Derivative-free
 
