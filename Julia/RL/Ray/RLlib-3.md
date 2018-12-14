@@ -1,4 +1,4 @@
-## Ray RLlib Performance
+# Ray RLlib Performance
 
 ### papers
 
@@ -24,7 +24,7 @@
 
   ![1544410290029](RLlib-3/1544410290029.png)
 
-  ![1544410329986](RLlib-3/1544410329986.png)
+  ![1544410329986](Improve-Ray/1544701655171.png)
 
 
 
