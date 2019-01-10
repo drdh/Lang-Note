@@ -1,4 +1,4 @@
-#### *介绍Ray系列的缺点并提出改进意见*
+ *介绍Ray系列的缺点并提出改进意见*
 
 [RLgraph: Flexible Computation Graphs for Deep Reinforcement Learning](https://arxiv.org/abs/1810.09028)
 
@@ -8,7 +8,7 @@ Ray 本身并不是完美的，对于某些特性，有研究人员提出了别�
 
 由于算法的不稳定性、超参的敏感性以及特征不同的交流方式，RL任务的实现、执行、测试都很具有挑战性。
 
-## 1. Introduction
+## Introduction
 
 针对不同的方面，已经有很多的RL库实现了。比如OpenAI, TensorForce, Ray RLlib. 虽然这些库都有各自不同的目的，但是都面临一些相似的问题，并且导致测试、分布式执行、扩展的困难。其根源就在于**a lack of separation of concerns**.  定义在RL算法中的逻辑组块部分与特定深度学习框架相关的代码紧紧结合在一起，比如说Ray RLlib里面就是这样，没有完整地分离，使用TensorFlow的部分就是完全依赖的。这就导致了API的不良定义，同时也让各个组块的重用与测试变得困难。相似地，RL复杂的dataflow与control flow也纠缠在一起。
 
@@ -24,9 +24,9 @@ Ray 本身并不是完美的，对于某些特性，有研究人员提出了别�
 2. **Static and define-by-run backends**. meta graph的设计并不强加限制在只能它自己的执行方式，这就意味着，不仅能支持end-to-end static graphs, 包括control flow, 也能支持define-by-run semantics 比如PyTorch, 这一点通过统一的接口实现
 3. **Fast development cycles and testing**. 这是由于各个组件的分离。
 
-## 2. Motivation
+##  Motivation
 
-### 2.1 RL workloads
+### RL workloads
 
 执行RL最中心的困难就在于需要频繁地与环境交互，贯穿于training, evaluatin 以及update.其特征如下：
 
@@ -34,15 +34,15 @@ Ray 本身并不是完美的，对于某些特性，有研究人员提出了别�
 - **Resource requirements and scale**. 最近成功的RL算法需要成百上千的CPU以及几百个GPU. 与此相反，有的算法不易并行，却可能只能用一个CPU. 
 - **Models and optimization strategies**. 模型可大可小，将硬件的作用用到极致很困难。
 
-### 2.2. Existing abstractions
+###  Existing abstractions
 
 - **Reference implementations**. 很多的库仅仅作为一个实现的参考，帮助重新产生研究结果。比如OpenAI baselines和Google's Dopamine 提供了一系列以及优化好的benchmarks比如OPenAI gym以及ALE.  Nervana Coach包含相似的东西，但也加上了一些工具，比如可视化、Hierarchical learning、分布式训练。这种实现在很多组块之间共享了算法，比如NN结构并且通常叶忽略了实际应用的考虑。所以重新利用他们到不同的模式就很困难
 - **Centralized control. **Ray RLlib定义了一系列抽象，它依赖Ray的actor模型来执行算法，正如前面讲到的，RLlib实现中很重要的就是optimizer, 每个optimization都有一个*step()*函数，这个函数分发采样任务给remote actor, 管理buffers以及更新weights. RLlib自己最宣传的一点就是，在optimizer的执行与RL算法的定义（由policy graph）分开。然而每个optimizer同时封装了local和distributed机器的执行，这意味着，比如说，只有专用的多GPU optimizer能够同步地在不同GPU上分离input. 使用optimizer驱动control flow的另一个坏处就是RLlib混合Python control flow, Ray call以及TensorFlow call进它的实现里。所以使用RLlib实现的算法就不容易移植，只能在Ray上执行。相反地RLgraph就不一样了，它支持端到端的计算图，包括in-graph control-flow, 然后就可以将它们分布在Ray, distributed TF等等任何其他的。
 - **Fixed end-to-end graphs** 主要是TensorForce的问题，略。
 
-## 3. Framework Design
+## Framework Design
 
-### 3.1. Design principles
+### Design principles
 
 没有占优势的单一模式，设计框架就必须解决灵活的原型、可重用的组块以及易拓展机制之间的矛盾。RLgraph的设计是基于如下几个观点的：
 
@@ -50,7 +50,7 @@ Ray 本身并不是完美的，对于某些特性，有研究人员提出了别�
 - **Shared components with strict interfaces** 
 - **Sub-graph testing** 
 
-### 3.2. Components and meta graph
+### Components and meta graph
 
 **Components. ** 然后来讨论RLgraph中component graph的设计，为了简化，使用TF作为基本的后端，其他后端的实现，比如PyTorch留在后面。RLgraph的核心抽象就是Component 类，这个类通过graph function来封装任意的计算。考虑一个replay buffer component, 这个component对外的功能是插入experiences和根据优先权重来批量采样。实现这样的buffer在命令式的语言，比如python 是非常直接的，但是将它作为TF Graph的一部分却需要通过控制流操作创建和管理很多的变量。将很多种这样的组件按可重用的方式组建很困难。但是使用define-by-run的框架比如PyTorch却很简单，然而在大容量分布式执行与程序导出层面上却存在困难。
 
@@ -66,7 +66,7 @@ Ray 本身并不是完美的，对于某些特性，有研究人员提出了别�
 
 开发者能够声明一个method为API method ，通过调用register function. 从技术上说，并不是一个component所有的功能都需要注册为API method. 用户也可以实现helper function或utilities, 比如说使用TF操作但是不将他们包含进API methos, 如果并不需要从外部components调用他们的话。
 
-### 3.3 Building component graphs
+### Building component graphs
 
 RLgraph用三个不同的阶段来组装。
 
@@ -107,7 +107,7 @@ RLgraph用三个不同的阶段来组装。
 
 3. **Building computation graphs ** 
 
-### 3.4 Agent API
+###  Agent API
 
 ```python
 abstract class rlgraph.agent:
@@ -122,15 +122,15 @@ abstract class rlgraph.agent:
 	def import_model, def export_model
 ```
 
-## 4. Executing Graphs
+##  Executing Graphs
 
-### 4.1 Graph executors.
+###  Graph executors.
 
-### 4.2 Backend support and code generation
+###  Backend support and code generation
 
-## 5. Evaluation
+##  Evaluation
 
-### 5.1 Results
+### Results
 
 ![1544711157283](Improve-Ray/1544711157283.png)
 
@@ -138,23 +138,77 @@ abstract class rlgraph.agent:
 
 ![1544711368106](Improve-Ray/1544711368106.png)
 
-### 5.2 Discussion
+### Discussion
 
 
+## [Doc](https://rlgraph.readthedocs.io/en/latest/)
+
+- Space类
+
+  - What is a Space?
+
+    在RLGraph中，Space被用来定义数据类型、形状。
+
+    比如，一个RGB(0-255)的类型就是`int8`, 而形状为`[width*height*3]`
+
+  - 两个主要的space类型：BoxSpaces & ContainerSpaces
+
+    BoxSpaces: 就是类似普通的张量
+
+    ContainerSpaces: 包括两类：Tuple, Dict
+
+    ![Example Tuple space with 3 box-type child-spaces.](Improve-Ray/tuple-space.png)
+
+    ![Example Dict space with 2 keys, each one holding a box-type child-space.](Improve-Ray/dict-space.png)
+
+- The Environment Classes
+
+  - What is an environment ?
+
+  - RLgraph’s environment adapters.
+
+    OpenAI, Deepmind Lab, Simple Grid Worlds
+
+- What is an RLgraph Component?
+
+  ​	可嵌套的最小单元，范围很广，比如：一层或者一个NN，复杂的policy networks, memories, optimizers, mathematical components (比如loss functions)
+
+  ![A DenseLayer component (Improve-Ray/dense_layer_component.png) with two API-methods (2), one graph function (3) and two variables (kernel and bias) (4).](Improve-Ray/dense_layer_component.png)
+
+  上图就是一个component包含
+
+   1. 两个API-methods
+
+   2. 一个graph function
+
+   3. 两个变量(kernel, bias)
 
 
+  - The Component Base Class
 
+    包含最核心的部分，每个Components都必须继承自它。一些核心的methods如下：
 
+    1. `add_components`:  添加任意数目的`sub-componets`
+    2. `check_input_spaces`: 检查spaces
+    3. `create_variables`: 会自动调用，创建一系列的变量，交由componet的computation function也就是graph function使用
+    4. `copy`: 复制出一个完全一样的componet. 比如target network和原来的policy network一模一样。
 
+    `API_Methods`相当于交给外界的handle. 本质上是普通的class method加上装饰器。
 
+- How to Write Your Own Custom Component
 
+  - A Simple Single-Value Memory Component
 
+- The Complete Code for Our Custom Component
 
+- How to Test Your Components
 
+  - Writing a New Test Case with Python’s Unittest Module
 
+- RLgraph API Reference Documentation
 
-
-
-
-
-
+  - 1. RLgraph Core API
+  - 2. Space Classes and Space Utilities
+  - 3. Agent Classes
+  - 4. Components Reference
+  - 5. Environment Classes

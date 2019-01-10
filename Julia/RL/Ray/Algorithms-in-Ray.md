@@ -4,9 +4,9 @@
 
 注意Trial Schedulers与Search Algorithms是不同的。前者安排一系列Trials如何执行执行顺序，后者确定每次的Hyperparameter Configuration.
 
-### 1. Tune Trial Schedulers
+### Tune Trial Schedulers
 
-#### 1.1. Popilation Based Training (PBT)
+####  Popilation Based Training (PBT)
 
 [DeepMind Blog-PBT](https://deepmind.com/blog/population-based-training-neural-networks/)
 
@@ -31,15 +31,15 @@
 
 而PBT就是，并行一系列hyperparameter不同的模型，然后在中间将那些结果不好的模型的parameter和hyperparameter换成较好的那个(exploit), 并且加上一些随机的噪声(explore).
 
-![1544540487814](Algorithms-in-Ray/1544540487814.png)
+![](Algorithms-in-Ray/1544540487814.png)
 
-#### 1.2. Asynchronous HyperBand
+#### Asynchronous HyperBand
 
 [Massively Parallel Hyperparameter Tuning](https://openreview.net/forum?id=S1Y7OOlRZ)
 
 这个算法是下面的HyperBand异步推广的结果。它的算法为
 
-![1544603332687](Algorithms-in-Ray/1544603332687.png)
+![](Algorithms-in-Ray/1544603332687.png)
 
 论文中只给出了Successive Halving算法(SHA),　由于下面的HyperBand 使用了SHA的子过程，所以很容易补充成为Asynchronous HyperBand.
 
@@ -49,7 +49,7 @@
 
 同时由于get_job()函数的存在，使得算法是异步的，当发现存在promotable设定的时候，就返回这个设定，并且将rung加一，如果不存在，也不用等待其他的结束，而是直接生成一个新的设定，且rung=0
 
-#### 1.3. HyperBand
+#### HyperBand
 
 [standard version of HyperBand](https://arxiv.org/abs/1603.06560)
 
@@ -59,11 +59,11 @@ https://people.eecs.berkeley.edu/~kjamieson/hyperband.html
 
 提出的算法如下
 
-![1544601981800](Algorithms-in-Ray/1544601981800.png)
+![](Algorithms-in-Ray/1544601981800.png)
 
 设定一个案例如下：
 
-![1544602008924](Algorithms-in-Ray/1544602008924.png)
+![](Algorithms-in-Ray/1544602008924.png)
 
 将trial分成很多部分，每次trial最大资源为$R$, 分成$(s_{max}=\lfloor \log _{\eta} (R) \rfloor)+1$ 个阶段，每个阶段总资源为$B=(s_{max}+1)R$ 每个阶段又分成多个子部分，其中当尝试的个数$n_i$越大，分配的资源$r_i$越小，越会提早结束探索。每个SHA子过程都使用不同的early-stop rate.(由于现代的超参调试问题都有高维的搜索空间，并且模型有很大的训练代价，所以提前终止是很有必要的)
 
@@ -99,19 +99,19 @@ for s in reversed(range(s_max+1)):
     #### End Finite Horizon Successive Halving with (n,r)
 ```
 
-#### 1.4. Median Stopping Rule
+#### Median Stopping Rule
 
 [Google Vizier: A Service for Black-Box Optimization](https://ai.google/research/pubs/pub46180)
 
 这篇文章介绍的是google研发的Black0Box Optimization系统。主要介绍了系统的组成。略。
 
-### 2. Tune Search Algorithms
+### Tune Search Algorithms
 
-#### 2.1. Variant Generation (Grid Search/Random Search)
+#### Variant Generation (Grid Search/Random Search)
 
 不必过多介绍。
 
-#### 2.2. HyperOpt Search (Tree-structured Parzen Estimators)
+#### HyperOpt Search (Tree-structured Parzen Estimators)
 
 [Hyperopt Distributed Asynchronous Hyperparameter Optimization in Python](http://hyperopt.github.io/hyperopt/)
 
@@ -168,11 +168,11 @@ ray里面其实是调用这个库来实现的。
 
 ## RLlib
 
-### 1. RLlib Algorithms
+### RLlib Algorithms
 
-#### 1.1. High-throughput architectures
+#### High-throughput architectures
 
-##### 1.1.1. Distributed Prioritized Experience Replay (Ape-X)
+##### Distributed Prioritized Experience Replay (Ape-X)
 
 [Distributed Prioritized Experience Replay](https://arxiv.org/abs/1803.00933)
 
@@ -182,7 +182,7 @@ ray里面其实是调用这个库来实现的。
 
 ***TODO***
 
-##### 1.1.2. Importance Weighted Actor-Learner Architecture (IMPALA)
+##### Importance Weighted Actor-Learner Architecture (IMPALA)
 
 [IMPALA: Scalable Distributed Deep-RL with Importance Weighted Actor-Learner Architectures](https://arxiv.org/abs/1802.01561)
 
@@ -190,15 +190,15 @@ ray里面其实是调用这个库来实现的。
 
 ***TODO***
 
-#### 1.2. Gradient-based
+#### Gradient-based
 
-##### 1.2.1. Advantage Actor-Critic (A2C, A3C)
+##### Advantage Actor-Critic (A2C, A3C)
 
 [Asynchronous Methods for Deep Reinforcement Learning](https://arxiv.org/abs/1602.01783)
 
 ***TODO***
 
-##### 1.2.2. Deep Deterministic Policy Gradients (DDPG, TD3)
+##### Deep Deterministic Policy Gradients (DDPG, TD3)
 
 [Continuous control with deep reinforcement learning](https://arxiv.org/abs/1509.02971)
 
@@ -234,7 +234,7 @@ $$
 
 
 
-##### 1.2.3. Deep Q Networks (DQN, Rainbow, Parametric DQN)
+##### Deep Q Networks (DQN, Rainbow, Parametric DQN)
 
 [Playing Atari with Deep Reinforcement Learning](https://arxiv.org/abs/1312.5602)
 
@@ -287,7 +287,7 @@ $$
 
 接下来就是详细介绍了DQN算法
 
-![1544622123874](Algorithms-in-Ray/1544622123874.png)
+![](Algorithms-in-Ray/1544622123874.png)
 
 需要注意的是，由于原始的像素数据太大，并不适合作为模型输入，所以添加了一个$\Phi$函数来预处理image
 
@@ -339,7 +339,7 @@ $$
 
 这里面好几个我自己没有接触过，更加详细的说明留在以后。
 
-##### 1.2.4. Policy Gradients
+##### Policy Gradients
 
 [Policy Gradient Methods for Reinforcement Learning with Function Approximation ](https://papers.nips.cc/paper/1713-policy-gradient-methods-for-reinforcement-learning-with-function-approximation.pdf)
 
@@ -365,9 +365,9 @@ PG是一个on-policy的，也就是说它的exploration是依据最新的policy�
 
 其算法如下
 
-![](https://spinningup.openai.com/en/latest/_images/math/47a7bd5139a29bc2d2dc85cef12bba4b07b1e831.svg)
+![](Algorithms-in-Ray/47a7bd5139a29bc2d2dc85cef12bba4b07b1e831.png)
 
-#####  1.2.5. Proximal Policy Optimization (PPO)
+#####  Proximal Policy Optimization (PPO)
 
 [Proximal Policy Optimization Algorithms](https://arxiv.org/abs/1707.06347)
 
@@ -425,7 +425,7 @@ $$
 
 TRPO的exploration与exploitation同PG
 
-![](https://spinningup.openai.com/en/latest/_images/math/fece98b123fdbe62167dade95a7c53d836ddc5a1.svg)
+![](Algorithms-in-Ray/fece98b123fdbe62167dade95a7c53d836ddc5a1.png)
 
 **PPO**
 
@@ -457,17 +457,17 @@ $$
 $$
 g(\epsilon, A) = \left \{     \begin{array}{ll}     (1 + \epsilon) A & A \geq 0 \\     (1 - \epsilon) A & A < 0.     \end{array}     \right .
 $$
-![](https://spinningup.openai.com/en/latest/_images/math/0a399dc49e3b45664a7edaf485ab5c23a7282f43.svg)
+![](Algorithms-in-Ray/0a399dc49e3b45664a7edaf485ab5c23a7282f43.png)
 
-#### 1.3. Derivative-free
+#### Derivative-free
 
-##### 1.3.1. Augmented Random Search (ARS)
+##### Augmented Random Search (ARS)
 
 [Simple random search provides a competitive approach to reinforcement learning](https://arxiv.org/abs/1803.07055)
 
 ***TODO***
 
-##### 1.3.2. Evolution Strategies
+##### Evolution Strategies
 
 [Evolution Strategies as a Scalable Alternative to Reinforcement Learning](https://arxiv.org/abs/1703.03864)
 
